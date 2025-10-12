@@ -56,13 +56,15 @@ RUN pip3 install apycula
 # Copy the entire project (including submodules) into the container
 COPY . /workspace/
 
-# Build Yosys
-WORKDIR /workspace/yosys
-RUN make -j$(nproc) && make install
+## # Build Yosys
+## WORKDIR /workspace/yosys
+## RUN make -j$(nproc) && make install
 
 # Build nextpnr
 WORKDIR /workspace/nextpnr
-RUN cmake . -DARCH=gowin -DGOWIN_BBA_EXECUTABLE=$(which gowin_bba) && \
+RUN mkdir -p build && \
+    cd build && \
+    cmake .. -DARCH=gowin -DGOWIN_BBA_EXECUTABLE=$(which gowin_bba) && \
     make -j$(nproc) && \
     make install
 
