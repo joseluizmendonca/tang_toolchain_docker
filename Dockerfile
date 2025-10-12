@@ -21,10 +21,13 @@ RUN apt-get update && apt-get install -y \
     verilator \
     libboost-all-dev \
     libeigen3-dev \
-    openfpgaloader \
     qtcreator \
     qtbase5-dev \
     qt5-qmake \
+    libftdi1-dev \
+    libhidapi-dev \
+    libudev-dev \
+    zlib1g-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Fusesoc system-wide
@@ -42,7 +45,7 @@ RUN git clone https://github.com/steveicarus/iverilog.git && \
     git checkout --track -b v11-branch origin/v11-branch && \
     sh autoconf.sh && \
     ./configure && \
-    make && \
+    make -j$(nproc) && \
     make install
 
 # Download and install oss-cad-suite
@@ -61,5 +64,14 @@ RUN git clone https://github.com/YosysHQ/nextpnr.git nextpnr-himbaechel && \
     mkdir -p build && \
     cd build && \
     cmake .. -DARCH="himbaechel" -DHIMBAECHEL_UARCH="gowin" -DBUILD_GUI=ON && \
+    make -j$(nproc) && \
+    make install
+
+# Build and install openFPGALoader from source
+RUN git clone https://github.com/trabucayre/openFPGALoader.git && \
+    cd openFPGALoader && \
+    mkdir build && \
+    cd build && \
+    cmake .. && \
     make -j$(nproc) && \
     make install
