@@ -49,6 +49,13 @@ RUN apt-get update && apt-get install -y \
     python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
+# Install newer CMake (nextpnr requires CMake 3.25+)
+RUN wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | tee /etc/apt/trusted.gpg.d/kitware.gpg >/dev/null && \
+    echo 'deb https://apt.kitware.com/ubuntu/ jammy main' | tee /etc/apt/sources.list.d/kitware.list >/dev/null && \
+    apt-get update && \
+    apt-get install -y cmake && \
+    rm -rf /var/lib/apt/lists/*
+
 # Install Python 3.9 (Ubuntu 22.04 comes with Python 3.10, but we'll use pip for apycula)
 # Since we're in Docker, we'll use the system Python and just install apycula
 RUN pip3 install apycula
@@ -56,9 +63,9 @@ RUN pip3 install apycula
 # Copy the entire project (including submodules) into the container
 COPY . /workspace/
 
-## # Build Yosys
-## WORKDIR /workspace/yosys
-## RUN make -j$(nproc) && make install
+## Build Yosys
+WORKDIR /workspace/yosys
+RUN make -j$(nproc) && make install
 
 # Build nextpnr
 WORKDIR /workspace/nextpnr
