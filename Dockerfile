@@ -5,96 +5,75 @@ FROM ubuntu:22.04
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Set working directory
-WORKDIR /workspace
+WORKDIR /root
 
-# Update package lists and install all required dependencies
+# Install all pre-requisites for the toolchain (following Ubuntu 22.04 setup instructions)
 RUN apt-get update && apt-get install -y \
-    make \
-    build-essential \
-    libssl-dev \
-    zlib1g-dev \
-    libbz2-dev \
-    libreadline-dev \
-    libsqlite3-dev \
-    wget \
-    curl \
-    llvm \
-    libncursesw5-dev \
-    xz-utils \
-    tk-dev \
-    libxml2-dev \
-    libxmlsec1-dev \
-    libffi-dev \
-    liblzma-dev \
-    git \
-    cmake \
-    libboost-all-dev \
-    libeigen3-dev \
-    libftdi1-2 \
-    libftdi1-dev \
-    libhidapi-hidraw0 \
-    libhidapi-dev \
-    libudev-dev \
-    pkg-config \
-    g++ \
-    clang \
-    bison \
-    flex \
-    gawk \
-    tcl-dev \
-    graphviz \
-    xdot \
-    python3 \
-    python3-pip \
-    python3-dev \
+    make build-essential libssl-dev zlib1g-dev \
+    libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm \
+    libncursesw5-dev xz-utils tk-dev libxml2-dev libxmlsec1-dev \
+    libffi-dev liblzma-dev git cmake libboost-all-dev libeigen3-dev \
+    libftdi1-2 libftdi1-dev libhidapi-hidraw0 libhidapi-dev \
+    libudev-dev zlib1g-dev pkg-config g++ clang bison flex \
+    gawk tcl-dev graphviz xdot pkg-config zlib1g-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install newer CMake (nextpnr requires CMake 3.25+)
-RUN wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | tee /etc/apt/trusted.gpg.d/kitware.gpg >/dev/null && \
-    echo 'deb https://apt.kitware.com/ubuntu/ jammy main' | tee /etc/apt/sources.list.d/kitware.list >/dev/null && \
-    apt-get update && \
-    apt-get install -y cmake && \
-    rm -rf /var/lib/apt/lists/*
+# Install pyenv
+RUN curl https://pyenv.run | bash && \
+    echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bashrc && \
+    echo 'export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bashrc && \
+    echo -e 'if command -v pyenv 1>/dev/null 2>&1; then\n eval "$(pyenv init -)"\nfi' >> ~/.bashrc
 
-# Install Python 3.9 (Ubuntu 22.04 comes with Python 3.10, but we'll use pip for apycula)
-# Since we're in Docker, we'll use the system Python and just install apycula
-RUN pip3 install apycula
+# Set pyenv environment variables for current session
+ENV PYENV_ROOT="/root/.pyenv"
+ENV PATH="$PYENV_ROOT/bin:$PATH"
 
-# Copy the entire project (including submodules) into the container
-COPY . /workspace/
+# Install Python 3.9.13 using pyenv
+RUN eval "$(pyenv init -)" && \
+    pyenv install 3.9.13 && \
+    pyenv global 3.9.13
 
-## Build Yosys
-WORKDIR /workspace/yosys
-RUN make -j$(nproc) && make install
+# Install apycula
+RUN eval "$(pyenv init -)" && pip install apycula
 
-# Build nextpnr
-WORKDIR /workspace/nextpnr
-RUN mkdir -p build && \
-    cd build && \
-    cmake .. -DARCH=gowin -DGOWIN_BBA_EXECUTABLE=$(which gowin_bba) && \
-    make -j$(nproc) && \
+# Install yosys
+RUN git clone https://github.com/YosysHQ/yosys.git && \
+    cd yosys && \
+    make && \
     make install
 
-# Build openFPGALoader
-WORKDIR /workspace/openFPGALoader
-RUN mkdir -p build && \
+# Install nextpnr
+RUN cd ~ && \
+    git clone https://github.com/YosysHQ/nextpnr.git && \
+    cd nextpnr && \
+    cmake . -DARCH=gowin -DGOWIN_BBA_EXECUTABLE=`which gowin_bba` && \
+    make && \
+    make install
+
+# Install openFPGALoader
+RUN cd ~ && \
+    git clone https://github.com/trabucayre/openFPGALoader.git && \
+    cd openFPGALoader && \
+    mkdir build && \
     cd build && \
     cmake ../ && \
-    cmake --build . -j$(nproc) && \
+    cmake --build . && \
     make install
 
-# Set up environment variables
-ENV PATH="/usr/local/bin:${PATH}"
+# Set up environment variables and ensure tools are in PATH
+ENV PATH="/usr/local/bin:$PYENV_ROOT/shims:$PYENV_ROOT/bin:${PATH}"
 
 # Create a non-root user for running the tools
-RUN useradd -m -s /bin/bash fpga && \
-    chown -R fpga:fpga /workspace
+RUN useradd -m -s /bin/bash fpga
 
 USER fpga
 WORKDIR /home/fpga
 
-# Add helpful aliases and environment setup
-RUN echo 'alias ll="ls -la"' >> ~/.bashrc && \
+# Set up user environment
+RUN echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bashrc && \
+    echo 'export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bashrc && \
+    echo -e 'if command -v pyenv 1>/dev/null 2>&1; then\n eval "$(pyenv init -)"\nfi' >> ~/.bashrc && \
+    echo 'alias ll="ls -la"' >> ~/.bashrc && \
     echo 'export PATH="/usr/local/bin:${PATH}"' >> ~/.bashrc
 
 # Set the default command
@@ -103,4 +82,4 @@ CMD ["/bin/bash"]
 # Labels for documentation
 LABEL maintainer="Jose Mendonca <zelumendonca@gmail.com>"
 LABEL description="FPGA Toolchain for Tang Nano boards with Yosys, nextpnr, and openFPGALoader"
-LABEL version="1.0"
+LABEL version="1.0.5"
