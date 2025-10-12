@@ -5,17 +5,25 @@ FROM ubuntu:22.04
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Install dependencies for Fusesoc and Icarus Verilog
+# and upgrade CMake to a version required by nextpnr
 RUN apt-get update && apt-get install -y \
+    wget \
+    gpg \
+    software-properties-common && \
+    wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc | gpg --dearmor - | tee /etc/apt/trusted.gpg.d/kitware.gpg >/dev/null && \
+    echo 'deb https://apt.kitware.com/ubuntu/ jammy main' | tee /etc/apt/sources.list.d/kitware.list >/dev/null && \
+    apt-get update && \
+    apt-get install -y \
     python3 \
     python3-pip \
     python3-dev \
     git \
-    wget \
     autoconf \
     gperf \
     bison \
     flex \
     build-essential \
+    cmake \
     gtkwave \
     ghdl \
     verilator \
