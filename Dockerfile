@@ -39,25 +39,28 @@ RUN eval "$(pyenv init -)" && pip install apycula
 # Install yosys
 RUN git clone https://github.com/YosysHQ/yosys.git && \
     cd yosys && \
-    make && \
+    git submodule update --init && \
+    make -j$(nproc) && \
     make install
 
 # Install nextpnr
 RUN cd ~ && \
     git clone https://github.com/YosysHQ/nextpnr.git && \
     cd nextpnr && \
+    git submodule update --init --recursive && \
     cmake . -DARCH=gowin -DGOWIN_BBA_EXECUTABLE=`which gowin_bba` && \
-    make && \
+    make -j$(nproc) && \
     make install
 
 # Install openFPGALoader
 RUN cd ~ && \
     git clone https://github.com/trabucayre/openFPGALoader.git && \
     cd openFPGALoader && \
+    git submodule update --init --recursive && \
     mkdir build && \
     cd build && \
     cmake ../ && \
-    cmake --build . && \
+    cmake --build . -j$(nproc) && \
     make install
 
 # Set up environment variables and ensure tools are in PATH
@@ -82,4 +85,4 @@ CMD ["/bin/bash"]
 # Labels for documentation
 LABEL maintainer="Jose Mendonca <zelumendonca@gmail.com>"
 LABEL description="FPGA Toolchain for Tang Nano boards with Yosys, nextpnr, and openFPGALoader"
-LABEL version="1.0.5"
+LABEL version="1.1.6"
