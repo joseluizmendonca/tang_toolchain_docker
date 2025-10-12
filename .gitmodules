@@ -7,3 +7,6 @@
 [submodule "openFPGALoader"]
 	path = openFPGALoader
 	url = https://github.com/trabucayre/openFPGALoader.git
+[submodule "src/tangnano_example"]
+	path = src/tangnano_example
+	url = https://github.com/sifferman/tangnano_example.git
