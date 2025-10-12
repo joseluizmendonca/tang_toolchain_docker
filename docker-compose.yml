@@ -1,0 +1,30 @@
+version: "3.8"
+services:
+  fpga-toolchain:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: tang-toolchain:latest
+    container_name: fpga_toolchain
+    # Allow GUI applications from the container to display on the host
+    environment:
+      - DISPLAY=${DISPLAY}
+      - QT_X11_NO_MITSHM=1
+    # Use host networking to easily connect to the X server
+    network_mode: host
+    # Grant extra permissions needed for device access and GUI forwarding
+    privileged: true
+    # Keep the container running for interactive use
+    stdin_open: true
+    tty: true
+    volumes:
+      # Mount the X11 socket for GUI applications
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      # Mount the Xauthority file to handle display access control
+      - ${HOME}/.Xauthority:/home/fpga/.Xauthority:ro
+      # Mount a local 'projects' directory into the container for your work
+      - ./projects:/home/fpga/projects
+      # Mount a local 'src' directory into the container for your work
+      - ./src:/home/fpga/src
+    # Keep the container alive so you can 'exec' into it
+    command: tail -f /dev/null
