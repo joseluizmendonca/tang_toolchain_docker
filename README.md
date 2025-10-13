@@ -34,6 +34,19 @@ This project uses Docker Compose to manage the build and run process.
 *   [Docker](https://docs.docker.com/get-docker/)
 *   [Docker Compose](https://docs.docker.com/compose/install/)
 
+### Clone the Repository
+
+```bash
+git clone https://github.com/joseluizmendonca/tang_toolchain_docker.git
+cd tang_toolchain_docker
+```
+
+#### Pull recursive submodules
+
+```bash
+git submodule update --init --recursive
+```
+
 ### Build the Docker Image
 
 Run the build script:
